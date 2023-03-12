@@ -1,1 +1,1 @@
-# redis-aqi-monitor
+# Raspberry Pi Pico W instructions
