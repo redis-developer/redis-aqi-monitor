@@ -9,7 +9,7 @@ import utility
 
 SENSOR_INTERVAL = 5 # seconds between each air sensor reading
 TTL_TIMER = 60 * 5 # 5 minutes between each ping for liveness
-SENSOR_LOCATION = 'bedroom'
+SENSOR_LOCATION = 'unit:3'
 STREAM_KEY = 'sensor:raw'
 
 # connect to WIFI
@@ -77,26 +77,15 @@ while True:
       'AQI', aqi,
       'temp', temperature_reading)
     
-    print(f'Stream Entry ID: {results}  AQI: {aqi}')
+    print(f'Stream Entry ID: {SENSOR_LOCATION} - {results}  AQI: {aqi}')
   
   except Exception as err:
     # report any errors in adding to stream
-    print(f'Unexpected {err}, {type(err)}')
+    print(f'Unexpected {err}: {type(err)}')
 
   finally:
+    print(f'{count_down_timer} seconds TTL')
     # reduce the countdown timer
     count_down_timer = count_down_timer - SENSOR_INTERVAL
     # sleep until time to read again
     time.sleep(SENSOR_INTERVAL)
-
-
-
-{
-  
-'target': 'office',
-'PM2.5': 4,
-'AQI': 16,
-'temp': 67.75
-
-  
-  }

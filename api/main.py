@@ -1,15 +1,16 @@
+#  cSpell:disable
 from fastapi import FastAPI, Request
 import os
 from dateutil.parser import *
 from datetime import *
 import redis
 
-TIMEFORMAT = '%Y-%m-%d %H:%M:%S'
-
+TIMEFORMAT='%Y-%m-%d %H:%M:%S'
+TIMEZONE_DIFF=5
 redis = redis.Redis(
-    host=os.getenv("REDIS_HOST"), 
-    port=os.getenv("REDIS_PORT"), 
-    password=os.getenv("REDIS_PASS"), 
+    host=os.getenv("AQI_HOST"), 
+    port=os.getenv("AQI_PORT"), 
+    password=os.getenv("AQI_PASS"), 
     decode_responses=True
 )
 
@@ -27,6 +28,7 @@ async def root():
   # fetch all active sensor keys
   active_sensors = redis.keys('ttl:*')
   # remove the tll prefix
+  system_profile['sensor_names'] = []
   for sensor in active_sensors:
     system_profile['sensor_names'].append(sensor[4:])
 
@@ -52,31 +54,36 @@ async def search(request: Request):
 @app.post("/query")
 async def query(request: Request):
   body = await request.json()
-  results_list = []
   targets = body['targets']
-
+  response=[]
   # set up iterator to query for one or multiple TS and return in results_array
   for target_request in targets:
     target = target_request['target']
     from_time = body['range']['from']
     to_time = body['range']['to']
     interval = body['intervalMs']/100
-
+    print(target)
     ts_key = f'ts:{target}:aqi'
-    from_time = (parse(from_time) - timedelta(hours=8)).strftime('%s')
-    to_time = (parse(to_time) - timedelta(hours=8)).strftime('%s')
+    from_time = (parse(from_time) - timedelta(hours=TIMEZONE_DIFF)).strftime('%s')
+    print(f'from_time: {from_time}')
+
+    to_time = (parse(to_time) - timedelta(hours=TIMEZONE_DIFF)).strftime('%s')
+    print(f'to_time: {to_time}')
     
     # request a specified range on timeseries
     results = redis.ts().range(ts_key, from_time, to_time, 
-      aggregation_type='avg', 
+      # aggregation_type='avg', 
       bucket_size_msec=int(interval))
-
+    print('HIT RANGE')
+    print(ts_key)
+    print(results)
     # iterate through results, and prepare response payload 
+    results_list = []
     for index, tuple in enumerate(results):
       graf_data = tuple[1]
-      graf_stamp = datetime.fromtimestamp(tuple[0]).strftime(TIMEFORMAT)
+      graf_stamp = int(tuple[0])*1000 # datetime.fromtimestamp(tuple[0]).strftime(TIMEFORMAT)
       results_list.append([graf_data, graf_stamp])
-      
-  response = [{'target' : target, 'datapoints' : results_list}]
-
+    response.append({'target' : target, 'datapoints' : results_list})
+  
+  print(response)
   return response

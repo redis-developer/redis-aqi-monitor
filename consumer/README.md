@@ -1,1 +1,0 @@
-# Stream to Timeseries Consumer
