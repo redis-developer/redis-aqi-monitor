@@ -72,7 +72,7 @@ async def query(request: Request):
     
     # request a specified range on timeseries
     results = redis.ts().range(ts_key, from_time, to_time, 
-      # aggregation_type='avg', 
+      aggregation_type='avg', 
       bucket_size_msec=int(interval))
     print('HIT RANGE')
     print(ts_key)
